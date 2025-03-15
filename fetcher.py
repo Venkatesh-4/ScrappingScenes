@@ -1,6 +1,5 @@
 import requests
 import os
-import agentql
 from playwright.sync_api import sync_playwright
 from dotenv import load_dotenv
 import psycopg2
@@ -99,46 +98,40 @@ def main():
 
 
 
+
 def login_and_get_cookies():
     """Log in using Playwright and retrieve session cookies."""
     print("🟡 Starting Playwright browser...")  
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=False)  
-        page = agentql.wrap(browser.new_page())
+        page = browser.new_page()
 
         print(f"🔄 Navigating to login page: {LOGIN_URL}")
         page.goto(LOGIN_URL)
 
-        # Login form filling
-        LOGIN_QUERY = """
-        {
-            login_form {
-                username
-                password
-                login_btn
-            }
-        }
-        """
-        response = page.query_elements(LOGIN_QUERY)
-        response.login_form.username.fill(CMR_USERNAME)
-        response.login_form.password.fill(CMR_PASSWORD)
+        # **Locate input fields and fill them**
+        page.fill('input[name="j_username"]', CMR_USERNAME)  # Adjust selector as needed
+        page.fill('input[name="j_password"]', CMR_PASSWORD)
         print("✅ Username and password entered.")
 
-        response.login_form.login_btn.click()
+        # Click login button
+        page.click('button[type="submit"]')  # Adjust selector if needed
         print("🔄 Clicking login button...")
 
-        # Wait for page to load
+        # Wait for page to load completely
         page.wait_for_load_state("networkidle")
         print("✅ Login successful, retrieving session cookies.")
 
         # Extract session cookies
         cookies = page.context.cookies()
-        # print(cookies)
         cookie_dict = {cookie['name']: cookie['value'] for cookie in cookies}
         print(f"🍪 Cookies Retrieved: {list(cookie_dict.keys())}")  # Display only cookie names for security
 
         browser.close()
         return cookie_dict
+
+
+
 
 def fetch_exam_schedules(cookies):
     """Fetch all exam schedules using session cookies."""
@@ -169,12 +162,19 @@ def fetch_results(cookies, examScheduleId, semesterId, universitySyllabusId):
     print(f"📡 API Response Status for Semester {semesterId}: {response.status_code}")
 
     if response.status_code == 200:
-        results = response.json()
-        print(f"✅ Results retrieved! Subjects: {len(results)}")
-        return results
+        if response.text.strip():  # Ensure response is not empty
+            try:
+                results = response.json()
+                return results
+            except requests.exceptions.JSONDecodeError:
+                print("⚠️ Error: API returned invalid JSON")
+                return None
+        else:
+            print("⚠️ Warning: API returned an empty response")
+            return None
     else:
-        print(f"⚠️ Failed to fetch results for Semester {semesterId}.")
-        return []
+        print(f"❌ Error: API request failed with status {response.status_code}")
+        return None
 
 # Function to connect to the database
 import psycopg2

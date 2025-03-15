@@ -9,6 +9,7 @@ def create_tables():
         """CREATE TABLE IF NOT EXISTS students (
             register_no VARCHAR(50) PRIMARY KEY,
             name VARCHAR(255),
+            cgpa REAL,
             course VARCHAR(255),
             school VARCHAR(255),
             course_duration VARCHAR(50)

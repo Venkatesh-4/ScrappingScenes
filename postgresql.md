@@ -52,7 +52,8 @@ AllSemesters AS (
 SELECT DISTINCT semester_no
 FROM semesters
 WHERE register_no = '22DBCAD053'
-)
+),
+ComputedCGPA AS (
 SELECT
 CASE
 WHEN (SELECT COUNT(_) FROM AllSemesters) = (SELECT COUNT(_) FROM SuccessfulSemesters)
@@ -60,4 +61,8 @@ THEN (SELECT SUM(sgpa \* earned_credits) / SUM(earned_credits)
 FROM semesters
 WHERE register_no = '22DBCAD053' AND result_status = 'Successful')
 ELSE NULL
-END AS CGPA;
+END AS CGPA
+)
+UPDATE students
+SET cgpa = (SELECT CGPA FROM ComputedCGPA)
+WHERE register_no = '22DBCAD053';
