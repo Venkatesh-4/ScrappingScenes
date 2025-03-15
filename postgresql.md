@@ -38,3 +38,26 @@ WHERE register_no = '22DBCAD053' AND semester_no = 2;
 SELECT SUM(credits_obtained \* grade_point) / SUM(credits_obtained) AS SGPA
 FROM subjects
 WHERE semester_no = 1 AND grade_point != 0;
+
+SELECT SUM(sgpa \* earned_credits) / SUM(earned_credits) AS CGPA
+FROM semesters
+WHERE result_status = 'Successful' AND register_no='22DBCAD053';
+
+WITH SuccessfulSemesters AS (
+SELECT DISTINCT semester_no
+FROM semesters
+WHERE register_no = '22DBCAD053' AND result_status = 'Successful'
+),
+AllSemesters AS (
+SELECT DISTINCT semester_no
+FROM semesters
+WHERE register_no = '22DBCAD053'
+)
+SELECT
+CASE
+WHEN (SELECT COUNT(_) FROM AllSemesters) = (SELECT COUNT(_) FROM SuccessfulSemesters)
+THEN (SELECT SUM(sgpa \* earned_credits) / SUM(earned_credits)
+FROM semesters
+WHERE register_no = '22DBCAD053' AND result_status = 'Successful')
+ELSE NULL
+END AS CGPA;
