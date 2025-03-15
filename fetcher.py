@@ -24,71 +24,69 @@ def main():
     
     print("\n📊 Retrieving exam schedules...")
     exam_schedules = fetch_exam_schedules(cookies)
-
     for exam in exam_schedules:
         print(f"\n{'='*50}")
         print(f"📚 Semester: {exam['semesterName']} | Exam: {exam['ExamName']}")
         print(f"📅 Result Declaration Date [YYYY/MM/DD]: {exam['resultDeclarationDate']}")
         print(f"{'='*50}")
 
-        # Fetch results for the given semester
         results = fetch_results(cookies, exam['examScheduleId'], exam['semesterId'], exam['universitySyllabusId'])
         
         if results:
-            with get_db_connection() as conn:  # Establish database connection
+            with get_db_connection() as conn:
                 try:
-                    with conn.cursor() as cursor:  # Open a database cursor
-                        conn.execute("BEGIN TRANSACTION;")  # 🚀 Start Transaction
+                    with conn.cursor() as cursor:  # ✅ Correct way to execute transactions
+                        cursor.execute("BEGIN;")  # 🚀 Start Transaction
 
-                        semester_no = clean_value(exam.get('semesterId'), int)  
-                        examScheduleTimetableId = clean_value(exam.get('examScheduleTimetableId', int))
-                        student = results[0]  # Assume all subjects belong to the same student
-                        seat_no = clean_value(student.get('seatNo'))  
+                    semester_no = clean_value(exam.get('semesterId'), int)
+                    examScheduleTimetableId = clean_value(exam.get('examScheduleTimetableId', int))
+                    student = results[0]
+                    seat_no = clean_value(student.get('seatNo'))
 
-                        insert_student(student)  # Insert student only once
-                        
-                        for subject in results:
-                            semester_data = {
-                                "examScheduleTimetableId": examScheduleTimetableId,
-                                "semester_no": semester_no,
-                                "seatNo": seat_no,
-                                "passingYear": clean_value(subject.get('passingYear'), int),
-                                "passingMonth": clean_value(subject.get('passingMonth')),
-                                "sgpa": clean_value(subject.get('sgpa'), float),
-                                "sgpaCreditPointTotal": clean_value(subject.get('sgpaCreditPointTotal'), float),
-                                "sgpaEarnedPointsTotal": clean_value(subject.get('sgpaEarnedPointsTotal'), float),
-                                "sgpaObtainedMarks": clean_value(subject.get('sgpaObtainedMarks'), float),
-                                "outOff": clean_value(subject.get('outOff')),
-                                "resultStatus": clean_value(subject.get('resultStatus')),
-                                "resultBlockStatus": clean_value(subject.get('resultBlockStatus')),
-                                "resultBlockReason": clean_value(subject.get('resultBlockReason')),
-                                "ordinance": clean_value(subject.get('ordinance'))
-                            }
-                            insert_semester(semester_data)
+                    insert_student(student)  # ✅ Function manages its own cursor
+                    
+                    for subject in results:
+                        semester_data = {
+                            "examScheduleTimetableId": examScheduleTimetableId,
+                            "semester_no": semester_no,
+                            "seatNo": seat_no,
+                            "passingYear": clean_value(subject.get('passingYear'), int),
+                            "passingMonth": clean_value(subject.get('passingMonth')),
+                            "sgpa": clean_value(subject.get('sgpa'), float),
+                            "sgpaCreditPointTotal": clean_value(subject.get('sgpaCreditPointTotal'), float),
+                            "sgpaEarnedPointsTotal": clean_value(subject.get('sgpaEarnedPointsTotal'), float),
+                            "sgpaObtainedMarks": clean_value(subject.get('sgpaObtainedMarks'), float),
+                            "outOff": clean_value(subject.get('outOff')),
+                            "resultStatus": clean_value(subject.get('resultStatus')),
+                            "resultBlockStatus": clean_value(subject.get('resultBlockStatus')),
+                            "resultBlockReason": clean_value(subject.get('resultBlockReason')),
+                            "ordinance": clean_value(subject.get('ordinance'))
+                        }
+                        insert_semester(semester_data)  # ✅ Function manages its own cursor
 
-                            subject_data = {
-                                "examScheduleTimetableId": examScheduleTimetableId,
-                                "subjectCode": clean_value(subject.get('subjectCode')),
-                                "semester_no": semester_no,
-                                "seatNo": seat_no,
-                                "subjectName": clean_value(subject.get('subjectName')),
-                                "InternalMarks": clean_value(subject.get('InternalMarks'), float),
-                                "intPassing": clean_value(subject.get('intPassing'), float),
-                                "int": clean_value(subject.get('int'), float),
-                                "ExternalMarks": clean_value(subject.get('ExternalMarks'), float),
-                                "extPassing": clean_value(subject.get('extPassing'), float),
-                                "ext": clean_value(subject.get('ext'), float),
-                                "Grade": clean_value(subject.get('Grade')),
-                                "Pointer": clean_value(subject.get('Pointer'), float),
-                                "earnedCredit": clean_value(subject.get('earnedCredit'), float),
-                                "creditPoint": clean_value(subject.get('creditPoint'), float)
-                            }
-                            insert_subject(subject_data)
+                        subject_data = {
+                            "examScheduleTimetableId": examScheduleTimetableId,
+                            "subjectCode": clean_value(subject.get('subjectCode')),
+                            "semester_no": semester_no,
+                            "seatNo": seat_no,
+                            "subjectName": clean_value(subject.get('subjectName')),
+                            "InternalMarks": clean_value(subject.get('InternalMarks'), float),
+                            "intPassing": clean_value(subject.get('intPassing'), float),
+                            "int": clean_value(subject.get('int'), float),
+                            "ExternalMarks": clean_value(subject.get('ExternalMarks'), float),
+                            "extPassing": clean_value(subject.get('extPassing'), float),
+                            "ext": clean_value(subject.get('ext'), float),
+                            "Grade": clean_value(subject.get('Grade')),
+                            "Pointer": clean_value(subject.get('Pointer'), float),
+                            "earnedCredit": clean_value(subject.get('earnedCredit'), float),
+                            "creditPoint": clean_value(subject.get('creditPoint'), float)
+                        }
+                        insert_subject(subject_data)  # ✅ Function manages its own cursor
 
-                            print(f"✅ Data inserted for {clean_value(subject.get('subjectName'), str)}")
+                        print(f"✅ Data inserted for {clean_value(subject.get('subjectName'), str)}")
 
-                        conn.commit()  # ✅ Commit Transaction if everything succeeds
-                        print("✅ All data inserted successfully.")
+                    conn.commit()  # ✅ Commit Transaction
+                    print("✅ All data inserted successfully.")
 
                 except Exception as e:
                     conn.rollback()  # 🚨 Rollback if anything fails
@@ -97,6 +95,7 @@ def main():
 
         else:
             print("🚫 No results available.")
+
 
 
 
