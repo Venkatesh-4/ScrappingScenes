@@ -49,26 +49,8 @@ def main():
                         # ✅ Insert student record first
                         insert_student(student, cursor)
 
-                        # ✅ Batch Insert for Semesters
-                        semester_data = [
-                            (
-                                examScheduleTimetableId,
-                                semester_no,
-                                seat_no,
-                                clean_value(sub.get('passingYear'), int),
-                                clean_value(sub.get('passingMonth')),
-                                clean_value(sub.get('sgpa'), float),
-                                clean_value(sub.get('sgpaCreditPointTotal'), float),
-                                clean_value(sub.get('sgpaEarnedPointsTotal'), float),
-                                clean_value(sub.get('sgpaObtainedMarks'), float),
-                                clean_value(sub.get('outOff')),
-                                clean_value(sub.get('resultStatus')),
-                                clean_value(sub.get('resultBlockStatus')),
-                                clean_value(sub.get('resultBlockReason')),
-                                clean_value(sub.get('ordinance'))
-                            ) for sub in results
-                        ]
-                        insert_semester(semester_data, cursor)
+                        # ✅ Insert Semesters Data
+                        insert_semester(student, exam, cursor)
 
                         # ✅ Batch Insert for Subjects
                         subject_data = [
@@ -191,23 +173,25 @@ def insert_student(student, cursor):
         ON CONFLICT (register_no) DO NOTHING
     """
     
-    values = (student["seatNo"], student["studentName"], student["programName"], 
-              student["instituteName"], student["academicyear"])
+    values = (clean_value(student["seatNo"]), clean_value(student["studentName"]), clean_value(student["programName"]), 
+              clean_value(student["instituteName"]), clean_value(student["academicyear"]))
     
 
     cursor.execute(query, values)
 
-def insert_semester(semester_data, cursor):
+def insert_semester(student, exam, cursor):
     """Efficiently inserts or updates multiple semester records in the database."""
     query = """
         INSERT INTO semesters (exam_schedule_timetable_id, semester_no, register_no, passing_year, passing_month, sgpa, 
                                total_credits, earned_credits, obtained_marks, out_of_marks, 
                                result_status, block_status, block_reason, ordinance)
-        VALUES %s
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (exam_schedule_timetable_id, semester_no, register_no) DO NOTHING;
     """
-
-    execute_values(cursor, query, semester_data) 
+    values = (clean_value(exam["examScheduleTimetableId"]), clean_value(exam["semesterId"]), clean_value(student["seatNo"]), clean_value(student["passingYear"]), clean_value(student["passingMonth"]), clean_value(student["sgpa"]), 
+              clean_value(student["sgpaCreditPointTotal"]), clean_value(student["sgpaEarnedPointsTotal"]), clean_value(student["sgpaObtainedMarks"]), clean_value(student["outOff"]), clean_value(student["resultStatus"]), 
+              clean_value(student["resultBlockStatus"]), clean_value(student["resultBlockReason"]), clean_value(student["ordinance"]))
+    cursor.execute(query, values) 
 
 def insert_subject(subject_data, cursor):
     """Inserts or updates multiple subject records in the database efficiently."""
