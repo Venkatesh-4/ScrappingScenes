@@ -80,6 +80,7 @@ def main():
                                 "extPassing": clean_value(subject.get('extPassing'), float),
                                 "ext": clean_value(subject.get('ext'), float),
                                 "Grade": clean_value(subject.get('Grade')),
+                                "Pointer": clean_value(subject.get('Pointer'), float),
                                 "earnedCredit": clean_value(subject.get('earnedCredit'), float),
                                 "creditPoint": clean_value(subject.get('creditPoint'), float)
                             }
@@ -239,8 +240,8 @@ def insert_subject(subject):
         INSERT INTO subjects (exam_schedule_timetable_id, subject_code, semester_no, register_no, subject_name, 
                               internal_marks, internal_passing_marks, max_internal_marks, 
                               external_marks, external_passing_marks, max_external_marks, 
-                              grade, credits_obtained, max_credits)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                              grade, grade_point, credits_obtained, max_credits)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (exam_schedule_timetable_id, subject_code, semester_no, register_no) DO UPDATE 
         SET subject_name = EXCLUDED.subject_name,
             internal_marks = EXCLUDED.internal_marks,
@@ -250,6 +251,7 @@ def insert_subject(subject):
             external_passing_marks = EXCLUDED.external_passing_marks,
             max_external_marks = EXCLUDED.max_external_marks,
             grade = EXCLUDED.grade,
+            grade_point = EXCLUDED.grade_point,
             credits_obtained = EXCLUDED.credits_obtained,
             max_credits = EXCLUDED.max_credits;
     """
@@ -257,7 +259,7 @@ def insert_subject(subject):
     values = (subject["examScheduleTimetableId"], subject["subjectCode"], subject["semester_no"], subject["seatNo"], subject["subjectName"], 
               subject["InternalMarks"], subject["intPassing"], subject["int"], 
               subject["ExternalMarks"], subject["extPassing"], subject["ext"], 
-              subject["Grade"], subject["earnedCredit"], subject["creditPoint"])
+              subject["Grade"], subject["Pointer"],subject["earnedCredit"], subject["creditPoint"])
     
     with get_db_connection() as conn:
         with conn.cursor() as cursor:
