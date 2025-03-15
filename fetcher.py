@@ -33,20 +33,21 @@ def main():
 
         # Fetch results for the given semester
         results = fetch_results(cookies, exam['examScheduleId'], exam['semesterId'], exam['universitySyllabusId'])
+        
         if results:
             with get_db_connection() as conn:  # Establish database connection
                 try:
                     with conn.cursor() as cursor:  # Open a database cursor
-                        semester_no = clean_value(exam.get('semesterId'), int)  # Fetch semester once
+                        conn.execute("BEGIN TRANSACTION;")  # 🚀 Start Transaction
+
+                        semester_no = clean_value(exam.get('semesterId'), int)  
                         examScheduleTimetableId = clean_value(exam.get('examScheduleTimetableId', int))
-                        # Insert student details (only once)
-                        student = results[0]  # Assuming all subjects belong to the same student
-                        seat_no = clean_value(student.get('seatNo'))  # Fetch and clean seatNo
-                        
+                        student = results[0]  # Assume all subjects belong to the same student
+                        seat_no = clean_value(student.get('seatNo'))  
+
                         insert_student(student)  # Insert student only once
                         
                         for subject in results:
-                            # Insert semester details
                             semester_data = {
                                 "examScheduleTimetableId": examScheduleTimetableId,
                                 "semester_no": semester_no,
@@ -65,7 +66,6 @@ def main():
                             }
                             insert_semester(semester_data)
 
-                            # Insert subject details
                             subject_data = {
                                 "examScheduleTimetableId": examScheduleTimetableId,
                                 "subjectCode": clean_value(subject.get('subjectCode')),
@@ -87,15 +87,16 @@ def main():
 
                             print(f"✅ Data inserted for {clean_value(subject.get('subjectName'), str)}")
 
-                    conn.commit()  # Commit all inserts
+                        conn.commit()  # ✅ Commit Transaction if everything succeeds
+                        print("✅ All data inserted successfully.")
+
                 except Exception as e:
-                    conn.rollback()  # Rollback if any insert fails
+                    conn.rollback()  # 🚨 Rollback if anything fails
                     print(f"❌ Error inserting data: {e}")
+                    print("🚨 Transaction rolled back. No changes committed.")
 
         else:
             print("🚫 No results available.")
-
-
 
 
 
