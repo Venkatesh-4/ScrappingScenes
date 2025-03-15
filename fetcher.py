@@ -162,19 +162,12 @@ def fetch_results(cookies, examScheduleId, semesterId, universitySyllabusId):
     print(f"📡 API Response Status for Semester {semesterId}: {response.status_code}")
 
     if response.status_code == 200:
-        if response.text.strip():  # Ensure response is not empty
-            try:
-                results = response.json()
-                return results
-            except requests.exceptions.JSONDecodeError:
-                print("⚠️ Error: API returned invalid JSON")
-                return None
-        else:
-            print("⚠️ Warning: API returned an empty response")
-            return None
+        results = response.json()
+        print(f"✅ Results retrieved! Subjects: {len(results)}")
+        return results
     else:
-        print(f"❌ Error: API request failed with status {response.status_code}")
-        return None
+        print(f"⚠️ Failed to fetch results for Semester {semesterId}.")
+        return []
 
 # Function to connect to the database
 import psycopg2
