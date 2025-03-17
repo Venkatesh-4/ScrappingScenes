@@ -212,7 +212,7 @@ def clean_value(value, dtype=str):
     if value == "-":
         return None
     try:
-        return dtype(value)
+        return dtype(value.strip())
     except (ValueError, TypeError):
         return None
 

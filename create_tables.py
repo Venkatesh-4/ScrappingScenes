@@ -46,7 +46,7 @@ def create_tables():
             external_marks REAL,
             external_passing_marks REAL,
             max_external_marks REAL,
-            grade CHAR(10),
+            grade VARCHAR(10),
             grade_point REAL,
             credits_obtained NUMERIC(3,2),
             max_credits NUMERIC(3,2),
