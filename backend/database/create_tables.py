@@ -1,5 +1,5 @@
 import psycopg2
-from database_config import DB_CONFIG
+from backend.database.database_config import DB_CONFIG
 
 def create_tables():
     conn = psycopg2.connect(**DB_CONFIG)

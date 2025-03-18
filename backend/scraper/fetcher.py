@@ -4,8 +4,8 @@ from playwright.sync_api import sync_playwright
 from dotenv import load_dotenv
 import psycopg2
 from psycopg2.extras import execute_values
-from database_config import DB_CONFIG
-from update_cgpa import calculate_and_update_cgpa
+from backend.database.database_config import DB_CONFIG
+from backend.scraper.update_cgpa import calculate_and_update_cgpa
 
 # Load environment variables
 load_dotenv()
