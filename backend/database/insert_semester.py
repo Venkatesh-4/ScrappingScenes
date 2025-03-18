@@ -1,4 +1,4 @@
-from backend.scraper.clean_value import clean_value
+from backend.lib.utils import clean_value
 
 def insert_semester(student, exam, cursor):
     """Efficiently inserts or updates multiple semester records in the database."""

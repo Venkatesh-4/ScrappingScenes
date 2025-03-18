@@ -1,4 +1,4 @@
-from backend.scraper.clean_value import clean_value
+from backend.lib.utils import clean_value
 
 def insert_student(student, cursor):
     """Inserts or updates student details in the database."""

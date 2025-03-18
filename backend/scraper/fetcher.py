@@ -3,7 +3,7 @@ from backend.scraper.getting_cookies import login_and_get_cookies
 from backend.scraper.getting_exam_schedule import fetch_exam_schedules
 from backend.scraper.getting_results import fetch_results
 from backend.database.db_connection import get_db_connection
-from backend.scraper.clean_value import clean_value
+from backend.lib.utils import clean_value
 from backend.database.insert_student import insert_student
 from backend.database.insert_semester import insert_semester
 from backend.database.insert_subject import insert_subject
