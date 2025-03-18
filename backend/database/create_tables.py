@@ -1,8 +1,8 @@
 import psycopg2
-from backend.database.database_config import DB_CONFIG
+from backend.database.db_connection import get_db_connection
 
 def create_tables():
-    conn = psycopg2.connect(**DB_CONFIG)
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     queries = [

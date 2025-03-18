@@ -1,15 +1,7 @@
 from fastapi import FastAPI
-import asyncpg
-app = FastAPI()
+from backend.database.db_connection_asyncpg import get_db_connection
 
-async def get_db_connection():
-    return await asyncpg.connect(
-        database="cmr_student_database",  # Change "dbname" to "database"
-        user="postgres",
-        password="venkatesh",
-        host="localhost",
-        port="5432" 
-    )
+app = FastAPI()
 
 @app.get("/students")
 async def get_students():

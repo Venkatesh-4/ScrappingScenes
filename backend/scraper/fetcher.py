@@ -1,26 +1,14 @@
-import requests
-import os
-from playwright.sync_api import sync_playwright
-from dotenv import load_dotenv
-import psycopg2
-from psycopg2.extras import execute_values
-from backend.database.database_config import DB_CONFIG
-from backend.scraper.update_cgpa import calculate_and_update_cgpa
-
-# Load environment variables
-load_dotenv()
-
-CMR_USERNAME = os.getenv('CMR_USERNAME')
-CMR_PASSWORD = os.getenv('CMR_PASSWORD')
-
-# Base URLs
-BASE_URL = "https://erp.cmr.edu.in"
-LOGIN_URL = f"{BASE_URL}/login.htm"
-SCHEDULE_URL = f"{BASE_URL}/getExamScheduleStudentSide.json"
-RESULT_URL_TEMPLATE = f"{BASE_URL}/getStudentSideResultForCMR.json?examScheduleId={{}}&examSemesterId={{}}&universitySyllabusId={{}}"
+from backend.database.update_cgpa import calculate_and_update_cgpa
+from backend.scraper.getting_cookies import login_and_get_cookies
+from backend.scraper.getting_exam_schedule import fetch_exam_schedules
+from backend.scraper.getting_results import fetch_results
+from backend.database.db_connection import get_db_connection
+from backend.scraper.clean_value import clean_value
+from backend.database.insert_student import insert_student
+from backend.database.insert_semester import insert_semester
+from backend.database.insert_subject import insert_subject
 
 def main():
-    """Main function to fetch and store results dynamically."""
     print("\n🚀 Starting Script...")
     cookies = login_and_get_cookies()
 
@@ -85,137 +73,6 @@ def main():
                     conn.rollback()  # 🚨 Rollback if anything fails
                     print(f"❌ Error inserting data: {e}")
                     print("🚨 Transaction rolled back. No changes committed.")
-
-
-
-
-
-def login_and_get_cookies():
-    """Log in using Playwright and retrieve session cookies."""
-    print("🟡 Starting Playwright browser...")  
-    with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=False)  
-        page = browser.new_page()
-
-        print(f"🔄 Navigating to login page: {LOGIN_URL}")
-        page.goto(LOGIN_URL)
-
-        # **Locate input fields and fill them**
-        page.fill('input[name="j_username"]', CMR_USERNAME)  # Adjust selector as needed
-        page.fill('input[name="j_password"]', CMR_PASSWORD)
-        print("✅ Username and password entered.")
-
-        # Click login button
-        page.click('button[type="submit"]')  # Adjust selector if needed
-        print("🔄 Clicking login button...")
-
-        # Wait for page to load completely
-        page.wait_for_load_state("networkidle")
-        print("✅ Login successful, retrieving session cookies.")
-
-        # Extract session cookies
-        cookies = page.context.cookies()
-        cookie_dict = {cookie['name']: cookie['value'] for cookie in cookies}
-        print(f"🍪 Cookies Retrieved: {list(cookie_dict.keys())}")  # Display only cookie names for security
-
-        browser.close()
-        return cookie_dict
-
-
-
-
-def fetch_exam_schedules(cookies):
-    """Fetch all exam schedules using session cookies."""
-    print("🔄 Fetching exam schedules...")
-    session = requests.Session()
-    session.cookies.update(cookies)
-
-    response = session.get(SCHEDULE_URL)
-    print(f"📡 API Response Status: {response.status_code}")
-
-    if response.status_code == 200:
-        schedules = response.json()
-        print(f"✅ Exam schedules retrieved! Total Semesters: {len(schedules)}")
-        return schedules
-    else:
-        print("❌ Failed to fetch exam schedules.")
-        return []
-
-def fetch_results(cookies, examScheduleId, semesterId, universitySyllabusId):
-    """Fetch results dynamically for each exam schedule."""
-    result_url = RESULT_URL_TEMPLATE.format(examScheduleId, semesterId, universitySyllabusId)
-    print(f"🔄 Fetching results from: {result_url}")
-
-    session = requests.Session()
-    session.cookies.update(cookies)
-
-    response = session.get(result_url)
-    print(f"📡 API Response Status for Semester {semesterId}: {response.status_code}")
-
-    if response.status_code == 200:
-        results = response.json()
-        print(f"✅ Results retrieved! Subjects: {len(results)}")
-        return results
-    else:
-        print(f"⚠️ Failed to fetch results for Semester {semesterId}.")
-        return []
-
-
-def get_db_connection():
-    """Establishes and returns a PostgreSQL database connection."""
-    return psycopg2.connect(**DB_CONFIG)
-
-def insert_student(student, cursor):
-    """Inserts or updates student details in the database."""
-    query = """
-        INSERT INTO students (register_no, name, course, school, course_duration)
-        VALUES (%s, %s, %s, %s, %s)
-        ON CONFLICT (register_no) DO NOTHING
-    """
-    
-    values = (clean_value(student["seatNo"]), clean_value(student["studentName"]), clean_value(student["programName"]), 
-              clean_value(student["instituteName"]), clean_value(student["academicyear"]))
-    
-
-    cursor.execute(query, values)
-
-def insert_semester(student, exam, cursor):
-    """Efficiently inserts or updates multiple semester records in the database."""
-    query = """
-        INSERT INTO semesters (exam_schedule_timetable_id, semester_no, register_no, passing_year, passing_month, sgpa, 
-                               total_credits, earned_credits, obtained_marks, out_of_marks, 
-                               result_status, block_status, block_reason, ordinance)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ON CONFLICT (exam_schedule_timetable_id, semester_no, register_no) DO NOTHING;
-    """
-    values = (clean_value(exam["examScheduleTimetableId"]), clean_value(exam["semesterId"]), clean_value(student["seatNo"]), clean_value(student["passingYear"]), clean_value(student["passingMonth"]), clean_value(student["sgpa"]), 
-              clean_value(student["sgpaCreditPointTotal"]), clean_value(student["sgpaEarnedPointsTotal"]), clean_value(student["sgpaObtainedMarks"]), clean_value(student["outOff"]), clean_value(student["resultStatus"]), 
-              clean_value(student["resultBlockStatus"]), clean_value(student["resultBlockReason"]), clean_value(student["ordinance"]))
-    cursor.execute(query, values) 
-
-def insert_subject(subject_data, cursor):
-    """Inserts or updates multiple subject records in the database efficiently."""
-    query = """
-        INSERT INTO subjects (exam_schedule_timetable_id, subject_code, semester_no, register_no, subject_name, 
-                              internal_marks, internal_passing_marks, max_internal_marks, 
-                              external_marks, external_passing_marks, max_external_marks, 
-                              grade, grade_point, credits_obtained, max_credits)
-        VALUES %s
-        ON CONFLICT (exam_schedule_timetable_id, subject_code, semester_no, register_no) DO NOTHING;
- 
-    
-    """
-    execute_values(cursor, query, subject_data) 
-        
-def clean_value(value, dtype=str):
-    """Convert '-' to None and cast to the specified dtype if possible."""
-    if value == "-":
-        return None
-    try:
-        return dtype(value.strip())
-    except (ValueError, TypeError):
-        return None
-
 
 
 # Runs only when the script is run directly and not when it is imported
