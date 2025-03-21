@@ -4,14 +4,54 @@
     
     let activeTab = 'overview';
     let selectedSemesterId: string | null = null;
+    let searchTerm = '';
+    let subjectSearchTerm = '';
+    let selectedSemester = null;
+    let sortField = '';
+    let sortDirection = 'asc';
+    let selectedSemesterForJump = '';
     
     console.log('Student data:', student);
     console.log('Semesters:', student.semesters);
     
     $: sortedSemesters = student ? 
-        [...JSON.parse(student.semesters)].sort((a, b) => a.semester_no - b.semester_no) : 
+        [...JSON.parse(student.semesters)].sort((a, b) => {
+            // First compare years
+            if (a.passing_year !== b.passing_year) {
+                return a.passing_year - b.passing_year;
+            }
+            // If years are same, compare months
+            const months = {
+                'January': 1, 'February': 2, 'March': 3, 'April': 4,
+                'May': 5, 'June': 6, 'July': 7, 'August': 8,
+                'September': 9, 'October': 10, 'November': 11, 'December': 12
+            };
+            return months[a.passing_month] - months[b.passing_month];
+        }) : 
         [];
         
+    // Filter semesters based on search term
+    $: filteredSemesters = sortedSemesters.filter(semester => {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+            semester.semester_no.toString().includes(searchLower) ||
+            semester.passing_month.toLowerCase().includes(searchLower) ||
+            semester.passing_year.toString().includes(searchLower) ||
+            semester.result_status.toLowerCase().includes(searchLower)
+        );
+    });
+
+    // Filter subjects based on search term
+    function filterSubjects(subjects: Subject[]) {
+        if (!subjectSearchTerm) return subjects;
+        const searchLower = subjectSearchTerm.toLowerCase();
+        return subjects.filter(subject => 
+            subject.subject_code.toLowerCase().includes(searchLower) ||
+            subject.subject_name.toLowerCase().includes(searchLower) ||
+            subject.grade.toLowerCase().includes(searchLower)
+        );
+    }
+
     function viewSemesterDetails(semester) {
         // Set the active tab to semesters
         activeTab = 'semesters';
@@ -26,6 +66,57 @@
             }
         }, 100);
     }
+
+    function sortSubjects(subjects: Subject[]) {
+        if (!sortField) return subjects;
+        
+        return [...subjects].sort((a, b) => {
+            let compareA, compareB;
+            
+            switch (sortField) {
+                case 'subject_name':
+                    compareA = a.subject_name.toLowerCase();
+                    compareB = b.subject_name.toLowerCase();
+                    break;
+                case 'internal_marks':
+                    compareA = a.internal_marks;
+                    compareB = b.internal_marks;
+                    break;
+                case 'external_marks':
+                    compareA = a.external_marks || 0;
+                    compareB = b.external_marks || 0;
+                    break;
+                case 'grade':
+                    compareA = a.grade_point;
+                    compareB = b.grade_point;
+                    break;
+                case 'credits':
+                    compareA = a.credits_obtained;
+                    compareB = b.credits_obtained;
+                    break;
+                default:
+                    return 0;
+            }
+            
+            if (sortDirection === 'asc') {
+                return compareA > compareB ? 1 : -1;
+            } else {
+                return compareA < compareB ? 1 : -1;
+            }
+        });
+    }
+
+    function toggleSort(field: string) {
+        if (sortField === field) {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortField = field;
+            sortDirection = 'asc';
+        }
+    }
+
+    $: filteredAndSortedSubjects = selectedSemester ? 
+        sortSubjects(filterSubjects(selectedSemester.subjects)) : [];
 </script>
 
 <style>
@@ -276,6 +367,58 @@
             gap: 0.5rem;
         }
     }
+    
+    .search-container {
+        margin-bottom: 1rem;
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .search-input {
+        padding: 0.5rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        width: 300px;
+        font-size: 0.9rem;
+    }
+    
+    .search-input:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
+    
+    .sort-header {
+        cursor: pointer;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .sort-header:hover {
+        color: #4f46e5;
+    }
+
+    .sort-icon {
+        font-size: 0.8rem;
+    }
+
+    .semester-select {
+        padding: 0.5rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        width: 300px;
+        font-size: 0.9rem;
+        background-color: white;
+        margin-bottom: 1rem;
+    }
+
+    .semester-select:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
 </style>
 
 {#if !student}
@@ -349,6 +492,35 @@
                     {/if}
                 </div>
             {:else if activeTab === 'semesters'}
+                <div class="search-container">
+                    <select 
+                        class="semester-select"
+                        bind:value={selectedSemesterForJump}
+                        on:change={(e) => {
+                            if (e.target.value) {
+                                const element = document.getElementById(`semester-${e.target.value}`);
+                                if (element) {
+                                    element.scrollIntoView({ behavior: 'smooth' });
+                                }
+                            }
+                        }}
+                    >
+                        <option value="">Jump to semester...</option>
+                        {#each sortedSemesters as semester}
+                            <option value={`${semester.semester_no}-${semester.exam_schedule_timetable_id}`}>
+                                Semester {semester.semester_no} ({semester.passing_month} {semester.passing_year})
+                            </option>
+                        {/each}
+                    </select>
+                    
+                    <input
+                        type="text"
+                        class="search-input"
+                        placeholder="Search subjects..."
+                        bind:value={subjectSearchTerm}
+                    />
+                </div>
+                
                 <div class="semesters">
                     {#if !sortedSemesters || sortedSemesters.length === 0}
                         <p>No semester data available</p>
@@ -373,15 +545,50 @@
                                             <thead>
                                                 <tr>
                                                     <th>Code</th>
-                                                    <th>Subject</th>
-                                                    <th>Internal</th>
-                                                    <th>External</th>
-                                                    <th>Grade</th>
-                                                    <th>Credits</th>
+                                                    <th>
+                                                        <div class="sort-header" on:click={() => toggleSort('subject_name')}>
+                                                            Subject
+                                                            {#if sortField === 'subject_name'}
+                                                                <span class="sort-icon">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                                                            {/if}
+                                                        </div>
+                                                    </th>
+                                                    <th>
+                                                        <div class="sort-header" on:click={() => toggleSort('internal_marks')}>
+                                                            Internal
+                                                            {#if sortField === 'internal_marks'}
+                                                                <span class="sort-icon">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                                                            {/if}
+                                                        </div>
+                                                    </th>
+                                                    <th>
+                                                        <div class="sort-header" on:click={() => toggleSort('external_marks')}>
+                                                            External
+                                                            {#if sortField === 'external_marks'}
+                                                                <span class="sort-icon">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                                                            {/if}
+                                                        </div>
+                                                    </th>
+                                                    <th>
+                                                        <div class="sort-header" on:click={() => toggleSort('grade')}>
+                                                            Grade
+                                                            {#if sortField === 'grade'}
+                                                                <span class="sort-icon">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                                                            {/if}
+                                                        </div>
+                                                    </th>
+                                                    <th>
+                                                        <div class="sort-header" on:click={() => toggleSort('credits')}>
+                                                            Credits
+                                                            {#if sortField === 'credits'}
+                                                                <span class="sort-icon">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                                                            {/if}
+                                                        </div>
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {#each semester.subjects as subject, index (subject.subject_code + '_' + student.register_no + '_' + semester.exam_schedule_timetable_id + '_' + index)}
+                                                {#each filterSubjects(sortSubjects(semester.subjects)) as subject, index (subject.subject_code + '_' + student.register_no + '_' + semester.exam_schedule_timetable_id + '_' + index)}
                                                     <tr style="background-color: {subject.grade.startsWith('F') ? '#fee2e2' : 'transparent'}">
                                                         <td>{subject.subject_code}</td>
                                                         <td>{subject.subject_name}</td>
