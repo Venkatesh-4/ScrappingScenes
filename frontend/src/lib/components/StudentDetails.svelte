@@ -11,8 +11,8 @@
     let sortDirection = 'asc';
     let selectedSemesterForJump = '';
     
-    console.log('Student data:', student);
-    console.log('Semesters:', student.semesters);
+    //console.log('Student data:', student);
+    //console.log('Semesters:', student.semesters);
     
     $: sortedSemesters = student ? 
         [...JSON.parse(student.semesters)].sort((a, b) => {
