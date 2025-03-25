@@ -588,46 +588,52 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {#each filterSubjects(sortSubjects(semester.subjects)) as subject, index (subject.subject_code + '_' + student.register_no + '_' + semester.exam_schedule_timetable_id + '_' + index)}
-                                                    <tr style="background-color: {subject.grade.startsWith('F') ? '#fee2e2' : 'transparent'}">
-                                                        <td>{subject.subject_code}</td>
-                                                        <td>{subject.subject_name}</td>
-                                                        <td>
-                                                            <span style="color: {subject.internal_marks >= subject.internal_passing_marks ? '#10b981' : '#ef4444'}">
-                                                                {subject.internal_marks}/{subject.max_internal_marks}
-                                                            </span>
-                                                            <br>
-                                                            <small>(Pass: {subject.internal_passing_marks})</small>
-                                                        </td>
-                                                        <td>
-                                                            {#if subject.external_marks !== null}
-                                                                <span style="color: {subject.external_marks >= subject.external_passing_marks ? '#10b981' : '#ef4444'}">
-                                                                    {subject.external_marks}/{subject.max_external_marks}
+                                                {#if filterSubjects(sortSubjects(semester.subjects)).length > 0}
+                                                    {#each filterSubjects(sortSubjects(semester.subjects)) as subject, index (subject.subject_code + '_' + student.register_no + '_' + semester.exam_schedule_timetable_id + '_' + index)}
+                                                        <tr style="background-color: {subject.grade.startsWith('F') ? '#fee2e2' : 'transparent'}">
+                                                            <td>{subject.subject_code}</td>
+                                                            <td>{subject.subject_name}</td>
+                                                            <td>
+                                                                <span style="color: {subject.internal_marks >= subject.internal_passing_marks ? '#10b981' : '#ef4444'}">
+                                                                    {subject.internal_marks}/{subject.max_internal_marks}
                                                                 </span>
-                                                            {:else}
-                                                                N/A
-                                                            {/if}
-                                                            <br>
-                                                            <small>(Pass: {subject.external_passing_marks})</small>
-                                                        </td>
-                                                        <td>
-                                                            <span style="font-weight: bold; color: {
-                                                                subject.grade === 'O' ? '#10b981' : 
-                                                                subject.grade === 'A+' ? '#10b981' : 
-                                                                subject.grade === 'A' ? '#10b981' : 
-                                                                subject.grade === 'B+' ? '#3b82f6' : 
-                                                                subject.grade === 'B' ? '#3b82f6' : 
-                                                                subject.grade === 'C' ? '#f59e0b' : 
-                                                                subject.grade.startsWith('F') ? '#ef4444' : '#6b7280'
-                                                            }">
-                                                                {subject.grade}
-                                                            </span>
-                                                            <br>
-                                                            <small>({subject.grade_point})</small>
-                                                        </td>
-                                                        <td>{subject.credits_obtained}/{subject.max_credits}</td>
+                                                                <br>
+                                                                <small>(Pass: {subject.internal_passing_marks})</small>
+                                                            </td>
+                                                            <td>
+                                                                {#if subject.external_marks !== null}
+                                                                    <span style="color: {subject.external_marks >= subject.external_passing_marks ? '#10b981' : '#ef4444'}">
+                                                                        {subject.external_marks}/{subject.max_external_marks}
+                                                                    </span>
+                                                                {:else}
+                                                                    N/A
+                                                                {/if}
+                                                                <br>
+                                                                <small>(Pass: {subject.external_passing_marks})</small>
+                                                            </td>
+                                                            <td>
+                                                                <span style="font-weight: bold; color: {
+                                                                    subject.grade === 'O' ? '#10b981' : 
+                                                                    subject.grade === 'A+' ? '#10b981' : 
+                                                                    subject.grade === 'A' ? '#10b981' : 
+                                                                    subject.grade === 'B+' ? '#3b82f6' : 
+                                                                    subject.grade === 'B' ? '#3b82f6' : 
+                                                                    subject.grade === 'C' ? '#f59e0b' : 
+                                                                    subject.grade.startsWith('F') ? '#ef4444' : '#6b7280'
+                                                                }">
+                                                                    {subject.grade}
+                                                                </span>
+                                                                <br>
+                                                                <small>({subject.grade_point})</small>
+                                                            </td>
+                                                            <td>{subject.credits_obtained}/{subject.max_credits}</td>
+                                                        </tr>
+                                                    {/each}
+                                                {:else}
+                                                    <tr>
+                                                        <td colspan="6" style="text-align: center; color: #6b7280;">No subjects found</td>
                                                     </tr>
-                                                {/each}
+                                                {/if}
                                             </tbody>
                                         </table>
                                     </div>
