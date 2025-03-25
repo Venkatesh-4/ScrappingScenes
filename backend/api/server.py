@@ -62,3 +62,17 @@ GROUP BY s.register_no;
     rows = await conn.fetch(query)
     await conn.close()
     return rows
+
+@app.get("/sgpa_progression/{register_no}")
+async def sgpa_progression(register_no: str):
+    query = """
+    SELECT semester_no, passing_year, passing_month, sgpa
+    FROM semesters
+    WHERE register_no = $1
+    ORDER BY passing_year, passing_month, semester_no;
+    """
+    # AND sgpa is NOT NULL
+    conn = await get_db_connection()
+    rows = await conn.fetch(query, register_no)
+    await conn.close()
+    return [{"semester": r["semester_no"], "year": r["passing_year"], "month": r["passing_month"], "sgpa": r["sgpa"]} for r in rows]

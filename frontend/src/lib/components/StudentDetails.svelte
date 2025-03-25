@@ -117,6 +117,69 @@
 
     $: filteredAndSortedSubjects = selectedSemester ? 
         sortSubjects(filterSubjects(selectedSemester.subjects)) : [];
+import { onMount, onDestroy, afterUpdate } from "svelte";
+import { Chart, registerables } from "chart.js";
+
+Chart.register(...registerables);
+
+let sgpaChart;
+let chartCanvas;
+
+// Reactive SGPA data
+$: sgpaData = sortedSemesters.map(s => ({
+    semester: `Sem ${s.semester_no}`,
+    sgpa: s.sgpa || 0
+}));
+
+// Function to initialize the chart
+function createChart() {
+    if (!chartCanvas) return;
+
+    let ctx = chartCanvas.getContext("2d");
+
+    sgpaChart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: sgpaData.map(d => d.semester),
+            datasets: [{
+                label: "SGPA Progression",
+                data: sgpaData.map(d => d.sgpa),
+                borderColor: "#3b82f6",
+                backgroundColor: "rgba(59, 130, 246, 0.2)",
+                borderWidth: 2,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { suggestedMin: 0, suggestedMax: 10 }
+            }
+        }
+    });
+}
+
+// Function to destroy the chart
+function destroyChart() {
+    if (sgpaChart) {
+        sgpaChart.destroy();
+        sgpaChart = null;
+    }
+}
+
+// Watch for tab changes
+$: if (activeTab === 'overview') {
+    destroyChart(); // Ensure the old chart is destroyed before re-creating
+    setTimeout(createChart, 100); // Delay to allow re-render
+} else {
+    destroyChart(); // Remove chart when switching away
+}
+
+// Cleanup when component is destroyed
+onDestroy(destroyChart);
+
+    
 </script>
 
 <style>
@@ -419,6 +482,11 @@
         border-color: #6366f1;
         box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
     }
+    .sgpa-chart-container {
+        margin-top: 20px;
+        width: 100%;
+        height: 300px;
+    }
 </style>
 
 {#if !student}
@@ -469,6 +537,12 @@
                     <div class="stat-card">
                         <h3>Total Exams Cleared</h3>
                         <div class="value">{sortedSemesters.filter(s => s.result_status === 'Successful').length}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="sgpa-chart-container">
+                            <h3>SGPA Progression</h3>
+                            <canvas bind:this={chartCanvas}></canvas>
+                        </div>
                     </div>
                 </div>
                 
