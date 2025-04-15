@@ -126,14 +126,15 @@ let sgpaChart;
 let chartCanvas;
 
 // Reactive SGPA data
-$: sgpaData = sortedSemesters.map(s => ({
-    semester: `Sem ${s.semester_no}`,
-    sgpa: s.sgpa || 0
-}));
+$: sgpaData = student ? 
+    sortedSemesters.map(s => ({
+        semester: `Sem ${s.semester_no}`,
+        sgpa: s.sgpa || 0
+    })) : [];
 
 // Function to initialize the chart
 function createChart() {
-    if (!chartCanvas) return;
+    if (!chartCanvas || !sgpaData.length) return;
 
     let ctx = chartCanvas.getContext("2d");
 
@@ -168,16 +169,23 @@ function destroyChart() {
     }
 }
 
-// Watch for tab changes
-$: if (activeTab === 'overview') {
-    destroyChart(); // Ensure the old chart is destroyed before re-creating
+// Watch for changes in student data
+$: if (student) {
+    destroyChart(); // Remove old chart
     setTimeout(createChart, 100); // Delay to allow re-render
+}
+
+// Handle tab switching
+$: if (activeTab === 'overview') {
+    destroyChart(); // Destroy old chart
+    setTimeout(createChart, 100); // Recreate chart
 } else {
     destroyChart(); // Remove chart when switching away
 }
 
 // Cleanup when component is destroyed
 onDestroy(destroyChart);
+
 
     
 </script>
