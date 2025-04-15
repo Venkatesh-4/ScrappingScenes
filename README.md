@@ -5,4 +5,4 @@ python -m backend.database.create_tables
 python -m backend.scraper.fetcher
 uvicorn backend.api.server:app --reload
 
-dont fetch origin
+this
