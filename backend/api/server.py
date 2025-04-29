@@ -1,7 +1,29 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+import asyncio
+import sys
+import subprocess
+from pathlib import Path
 from backend.database.db_connection_asyncpg import get_db_connection
+from backend.scraper.fetcher import main as fetcher_main
+import os
+from pydantic import BaseModel
 
 app = FastAPI()
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class Credentials(BaseModel):
+    username: str
+    password: str
 
 @app.get("/students")
 async def get_students():
@@ -76,3 +98,43 @@ async def sgpa_progression(register_no: str):
     rows = await conn.fetch(query, register_no)
     await conn.close()
     return [{"semester": r["semester_no"], "year": r["passing_year"], "month": r["passing_month"], "sgpa": r["sgpa"]} for r in rows]
+
+@app.post("/api/run-fetcher")
+async def run_fetcher(credentials: Credentials):
+    try:
+        # Use the same Python executable that's running this FastAPI app
+        python_executable = sys.executable
+        
+        # Set up environment with UTF-8 encoding
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
+        
+        # Run the fetcher script using the virtual environment's Python
+        result = subprocess.run(
+            [python_executable, "-c", 
+             f"from backend.scraper.fetcher import main; main('{credentials.username}', '{credentials.password}')"],
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=str(Path(__file__).parent.parent.parent),  # Run from project root
+            env=env
+        )
+        
+        return {
+            "output": result.stdout,
+            "error": result.stderr,
+            "success": True
+        }
+        
+    except subprocess.CalledProcessError as e:
+        return {
+            "output": e.stdout,
+            "error": e.stderr,
+            "success": False
+        }
+    except Exception as e:
+        return {
+            "output": "",
+            "error": str(e),
+            "success": False
+        }

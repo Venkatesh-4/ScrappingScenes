@@ -19,3 +19,8 @@ What I need to do next:
     1) 
     
 3. Comparative analytics across students
+
+4. add a page to be able perform the scrapping logic
+
+filtering aplies to all the tables. need ot6 single it out
+
