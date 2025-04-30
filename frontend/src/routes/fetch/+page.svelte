@@ -1,6 +1,7 @@
 <script lang="ts">
   let output: string = "";
   let error: string = "";
+  let success: boolean = false;
   let loading: boolean = false;
   let username: string = "";
   let password: string = "";
@@ -9,6 +10,7 @@
     loading = true;
     output = "";
     error = "";
+    success = false;
 
     try {
       const response = await fetch('http://localhost:8000/api/run-fetcher', {
@@ -24,11 +26,14 @@
       if (data.success) {
         output = data.output;
         error = data.error;
+        success = true;
       } else {
         error = data.error || 'Failed to run fetcher';
+        success = false;
       }
     } catch (e) {
       error = e.message;
+      success = false;
     } finally {
       loading = false;
     }
@@ -67,6 +72,13 @@
       </button>
     </form>
   </div>
+
+  {#if success}
+    <div class="success-box">
+      <div class="success-icon">✅</div>
+      <div class="success-message">Operation completed successfully!</div>
+    </div>
+  {/if}
 
   {#if error}
     <div class="error-box">
@@ -151,6 +163,25 @@
   .submit-button:disabled {
     opacity: 0.7;
     cursor: not-allowed;
+  }
+
+  .success-box {
+    background-color: #e8f5e9;
+    border-left: 4px solid #4caf50;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .success-icon {
+    margin-right: 0.5rem;
+  }
+
+  .success-message {
+    color: #2e7d32;
+    font-size: 0.9rem;
   }
 
   .error-box {
