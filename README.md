@@ -63,11 +63,4 @@ pip install -r requirements.txt
 playwright install
 python -m backend.database.create_tables
 python -m backend.scraper.fetcher
-```
 
-4. Run the application
-```bash
-uvicorn backend.api.server:app --reload
-```
-
-The application will be available at `http://localhost:8000`
