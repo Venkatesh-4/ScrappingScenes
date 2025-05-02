@@ -8,9 +8,9 @@ from backend.database.insert_student import insert_student
 from backend.database.insert_semester import insert_semester
 from backend.database.insert_subject import insert_subject
 
-def main():
+def main(username: str, password: str):
     print("\n🚀 Starting Script...")
-    cookies = login_and_get_cookies()
+    cookies = login_and_get_cookies(username, password)
 
     print("\n📊 Retrieving exam schedules...")
     exam_schedules = fetch_exam_schedules(cookies)
@@ -29,18 +29,18 @@ def main():
                     with conn.cursor() as cursor:
                         student = results[0]
                         
-                        # ✅ Extract values once
+                        # Extract values once
                         seat_no = clean_value(student.get('seatNo'))
                         semester_no = clean_value(exam.get('semesterId'), int)
                         examScheduleTimetableId = clean_value(exam.get('examScheduleTimetableId', int))
 
-                        # ✅ Insert student record first
+                        # Insert student record first
                         insert_student(student, cursor)
 
-                        # ✅ Insert Semesters Data
+                        # Insert Semesters Data
                         insert_semester(student, exam, cursor)
 
-                        # ✅ Batch Insert for Subjects
+                        # Batch Insert for Subjects
                         subject_data = [
                             (
                                 examScheduleTimetableId,
@@ -62,19 +62,22 @@ def main():
                         ]
                         insert_subject(subject_data, cursor)
 
-                        # ✅ Ensure CGPA calculation is part of the same transaction
+                        # Ensure CGPA calculation is part of the same transaction
                         calculate_and_update_cgpa(seat_no, cursor)
 
-                        # ✅ Commit only once after all operations succeed
+                        # Commit only once after all operations succeed
                         conn.commit()
                         print(f"✅ Successfully inserted data for Semester {semester_no}")
 
                 except Exception as e:
-                    conn.rollback()  # 🚨 Rollback if anything fails
+                    conn.rollback()  # Rollback if anything fails
                     print(f"❌ Error inserting data: {e}")
                     print("🚨 Transaction rolled back. No changes committed.")
 
 
 # Runs only when the script is run directly and not when it is imported
 if __name__ == "__main__":
-    main()
+    import os
+    from dotenv import load_dotenv
+    load_dotenv()
+    main(os.getenv('CMR_USERNAME'), os.getenv('CMR_PASSWORD'))

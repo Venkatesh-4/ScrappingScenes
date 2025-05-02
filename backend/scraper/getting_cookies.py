@@ -1,16 +1,9 @@
 from playwright.sync_api import sync_playwright
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-CMR_USERNAME = os.getenv('CMR_USERNAME')
-CMR_PASSWORD = os.getenv('CMR_PASSWORD')
 
 BASE_URL = "https://erp.cmr.edu.in"
 LOGIN_URL = f"{BASE_URL}/login.htm"
 
-def login_and_get_cookies():
+def login_and_get_cookies(username: str, password: str):
     """Log in using Playwright and retrieve session cookies."""
     print("🟡 Starting Playwright browser...")  
     with sync_playwright() as pw:
@@ -21,8 +14,8 @@ def login_and_get_cookies():
         page.goto(LOGIN_URL)
 
         # **Locate input fields and fill them**
-        page.fill('input[name="j_username"]', CMR_USERNAME)  # Adjust selector as needed
-        page.fill('input[name="j_password"]', CMR_PASSWORD)
+        page.fill('input[name="j_username"]', username)  # Adjust selector as needed
+        page.fill('input[name="j_password"]', password)
         print("✅ Username and password entered.")
 
         # Click login button
@@ -42,4 +35,4 @@ def login_and_get_cookies():
         return cookie_dict
     
 if __name__ == "__main__":
-    login_and_get_cookies()
+    login_and_get_cookies("username", "password")
