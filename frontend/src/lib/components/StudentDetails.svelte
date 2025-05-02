@@ -179,7 +179,6 @@ $: if (activeTab === 'overview') {
 // Cleanup when component is destroyed
 onDestroy(destroyChart);
 
-    
 </script>
 
 <style>
@@ -521,6 +520,9 @@ onDestroy(destroyChart);
             <div class="tab {activeTab === 'semesters' ? 'active' : ''}" on:click={() => activeTab = 'semesters'}>
                 Semesters
             </div>
+            <div class="tab {activeTab === 'compare' ? 'active' : ''}" on:click={() => activeTab = 'compare'}>
+                Compare
+            </div>
         </div>
         
         <div class="tab-content">
@@ -715,6 +717,21 @@ onDestroy(destroyChart);
                             </div>
                         {/each}
                     {/if}
+                </div>
+            {/if}
+            {#if activeTab === 'compare'}
+                <div class="compare-grid">
+                    <div class="compare-card">
+                        <h3>Compare</h3>
+                        <div class="compare-details">
+                            <div class="compare-info">
+                                <p><strong>Register No:</strong> {student.register_no}</p>
+                                <p><strong>Course:</strong> {student.course}</p>
+                                <p><strong>School:</strong> {student.school}</p>
+                                <p><strong>Duration:</strong> {student.course_duration}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             {/if}
         </div>
